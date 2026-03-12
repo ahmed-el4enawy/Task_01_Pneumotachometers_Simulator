@@ -313,7 +313,7 @@ class SpirometryGUI:
                     self.canvas.draw_idle()
 
                     # AI Diagnosis
-                    diagnosis, conf = self.ai.predict(state['fvc'], state['fev1'], state['ratio'])
+                    diagnosis, conf = self.ai.predict(state['pct_fvc'], state['pct_fev1'], state['ratio'])
                     color = self.colors['accent_red'] if diagnosis != "Normal" else self.colors['accent_green']
                     self.ai_label.config(text=f"{diagnosis}\n(Conf: {conf:.0%})", fg=color)
 
