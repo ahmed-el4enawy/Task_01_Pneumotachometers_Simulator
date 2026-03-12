@@ -13,7 +13,6 @@ import numpy as np
 import csv
 
 from pneumotach_engine import PneumotachEngine
-from diagnostic_classifier import DiagnosticClassifier
 
 class SpirometryGUI:
     def __init__(self, root):
@@ -39,7 +38,6 @@ class SpirometryGUI:
         self.root.configure(bg=self.colors['bg_main'])
 
         self.engine = PneumotachEngine()
-        self.ai = DiagnosticClassifier() # Automatically loads .pkl
         self.last_state = None
 
         self.setup_styles()
@@ -180,13 +178,6 @@ class SpirometryGUI:
         # Separator
         tk.Frame(left_panel, height=1, bg=self.colors['border']).pack(fill=tk.X, padx=20)
 
-        # 3. AI Diagnosis
-        ai_frame = tk.Frame(left_panel, bg=self.colors['bg_panel'])
-        ai_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        tk.Label(ai_frame, text="AI DIAGNOSIS", font=('Segoe UI', 11, 'bold'), bg=self.colors['bg_panel'], fg=self.colors['text_secondary']).pack(anchor='w')
-
-        self.ai_label = tk.Label(ai_frame, text="Waiting for test...", font=('Segoe UI', 16, 'bold'), bg=self.colors['bg_panel'], fg=self.colors['text_secondary'])
-        self.ai_label.pack(expand=True)
 
         # --- RIGHT PANEL (Premium Graphs) ---
         right_panel = tk.Frame(main_container, bg=self.colors['bg_panel'], highlightbackground=self.colors['border'], highlightthickness=1)
@@ -251,7 +242,6 @@ class SpirometryGUI:
         self.labels['fvc'].config(text="--")
         self.labels['fev1'].config(text="--")
         self.labels['ratio'].config(text="--")
-        self.ai_label.config(text="Analyzing Patient...", fg=self.colors['accent_yellow'])
         self.reset_graphs()
 
         # Start Engine
@@ -301,7 +291,6 @@ class SpirometryGUI:
                 if state['profile'] == "3L Syringe Calibration":
                     self.labels['fvc'].config(text=f"{state['fvc']:.2f} L")
                     self.labels['fev1'].config(text=f"{state['fev1']:.2f} L")
-                    self.ai_label.config(text="CALIBRATION SUCCESS\n(Error < 1%)", fg=self.colors['accent_blue'])
                 else:
                     self.labels['fvc'].config(text=f"{state['fvc']:.2f} L \n({state['pct_fvc']:.0f}%)", font=('Segoe UI', 14, 'bold'))
                     self.labels['fev1'].config(text=f"{state['fev1']:.2f} L \n({state['pct_fev1']:.0f}%)", font=('Segoe UI', 14, 'bold'))
@@ -311,11 +300,6 @@ class SpirometryGUI:
                     self.ax3.scatter(1.0, state['fev1'], color=self.colors['accent_red'], s=60, zorder=5)
                     self.ax3.axhline(y=state['fvc'], color=self.colors['text_secondary'], linestyle='--', alpha=0.5)
                     self.canvas.draw_idle()
-
-                    # AI Diagnosis
-                    diagnosis, conf = self.ai.predict(state['pct_fvc'], state['pct_fev1'], state['ratio'])
-                    color = self.colors['accent_red'] if diagnosis != "Normal" else self.colors['accent_green']
-                    self.ai_label.config(text=f"{diagnosis}\n(Conf: {conf:.0%})", fg=color)
 
                 self.engine.data = None
 

@@ -50,21 +50,38 @@ class PneumotachEngine:
         """Mathematical synthesis of the waveform, BTPS, filtering, and integration."""
         t = np.arange(0, self.t_end, self.dt)
         btps_factor = 1.11  # Standard Body Temp Pressure Saturated correction
+        
+        # 1. Calculate the theoretically perfect lung capacity for this person
+        pred_fvc, pred_fev1 = self._calculate_predicted(age, height_cm, sex)
 
-        # Select Physiological Parameters
+        # 2. Select Physiological Parameters & Determine Target Volume
         if profile == "Normal":
-            peak_dP, tau, noise_std, dc_offset = 150.0, 0.50, 3.5, 0.0
+            target_pct_fvc = 1.00 # Target 100% of their actual lung capacity
+            base_peak_dP, tau, noise_std, dc_offset = 150.0, 0.50, 3.5, 0.0
         elif profile == "Obstructive (COPD)":
-            peak_dP, tau, noise_std, dc_offset = 95.0, 1.50, 3.5, 0.0
+            target_pct_fvc = 1.00 # Obstructive primarily slows flow, capacity drops late
+            base_peak_dP, tau, noise_std, dc_offset = 95.0, 1.50, 3.5, 0.0
         elif profile == "Restrictive":
-            peak_dP, tau, noise_std, dc_offset = 120.0, 0.30, 3.5, 0.0
+            target_pct_fvc = 0.60  # Restrictive severely truncates total volume FVC
+            base_peak_dP, tau, noise_std, dc_offset = 120.0, 0.30, 3.5, 0.0
         elif profile == "Sensor Zero-Drift":
-            peak_dP, tau, noise_std, dc_offset = 150.0, 0.50, 3.5, 3.0 # 3 Pa drift ruins integration
+            target_pct_fvc = 1.00 
+            base_peak_dP, tau, noise_std, dc_offset = 150.0, 0.50, 3.5, 3.0 # 3 Pa drift ruins integration
         elif profile == "3L Syringe Calibration":
-            peak_dP, tau, noise_std, dc_offset = 0.0, 0.0, 0.5, 0.0 # Handled manually below
+            target_pct_fvc = 1.00 # Target is overridden below
+            base_peak_dP, tau, noise_std, dc_offset = 0.0, 0.0, 0.5, 0.0 # Handled manually below
             btps_factor = 1.00 # Syringes use room air (ATPD), no BTPS needed
         else:
-            peak_dP, tau, noise_std, dc_offset = 150.0, 0.50, 3.5, 0.0
+            target_pct_fvc = 1.00
+            base_peak_dP, tau, noise_std, dc_offset = 150.0, 0.50, 3.5, 0.0
+
+        target_fvc = pred_fvc * target_pct_fvc
+        
+        # 3. Scale Pressure mathematically
+        # V = Integral(Q) = Integral(K * dP). So V is linearly proportional to peak_dP. 
+        # A base_peak_dP of 150 roughly generated ~4.5L previously. We scale it linearly.
+        fvc_scaling_multiplier = target_fvc / 4.50
+        peak_dP = base_peak_dP * fvc_scaling_multiplier
 
         dP_ideal = np.zeros_like(t)
 
@@ -115,7 +132,6 @@ class PneumotachEngine:
         ratio = (fev1 / fvc) * 100.0 if fvc > 0 else 0.0
 
         # Demographics & Predicted Values
-        pred_fvc, pred_fev1 = self._calculate_predicted(age, height_cm, sex)
         pct_fvc = (fvc / pred_fvc) * 100.0
         pct_fev1 = (fev1 / pred_fev1) * 100.0
 

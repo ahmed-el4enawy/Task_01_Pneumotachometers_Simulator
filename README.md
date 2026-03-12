@@ -1,8 +1,8 @@
-# Diagnostic Pneumotachometer Simulator with AI-Based Classification
+# Diagnostic Pneumotachometer Simulator
 
 ## Executive Summary
 
-This project presents a comprehensive, physics-based software simulation of a Fleisch diagnostic pneumotachometer (electronic spirometer) with an integrated artificial intelligence module for automated respiratory disease classification. Developed for the Medical Equipment II (SBE 3220) course, the system demonstrates the core electro-pneumatic operating principles of spirometry—from fluid dynamics and transducer physics to digital signal processing and clinical feature extraction—without the need for physical hardware.
+This project presents a comprehensive, physics-based software simulation of a Fleisch diagnostic pneumotachometer (electronic spirometer). Developed for the Medical Equipment II (SBE 3220) course, the system demonstrates the core electro-pneumatic operating principles of spirometry—from fluid dynamics and transducer physics to digital signal processing and clinical feature extraction—without the need for physical hardware.
 
 ## Table of Contents
 
@@ -11,7 +11,7 @@ This project presents a comprehensive, physics-based software simulation of a Fl
 3. [System Architecture](#system-architecture)
 4. [Installation](#installation)
 5. [Usage Instructions](#usage-instructions)
-6. [AI Model Details](#ai-model-details)
+
 7. [Technical Specifications](#technical-specifications)
 8. [File Descriptions](#file-descriptions)
 9. [Testing](#testing)
@@ -30,9 +30,7 @@ Demonstrating the internal workings of a pneumotachometer requires visualizing m
 
 ### Solution
 
-This project implements a complete "digital twin" of the measurement pipeline. It explicitly models the physics of a forced expiratory maneuver and the subsequent electronic processing, combining:
-1. **First-Principles Physics Engine** - Simulates physiological pressure, adds transducer noise, and integrates the signal.
-2. **AI-Powered Diagnostics** - A Machine Learning classifier that evaluates the output metrics against ATS/ERS clinical standards to detect Obstructive and Restrictive diseases.
+This project implements a complete "digital twin" of the measurement pipeline. It explicitly models the physics of a forced expiratory maneuver and the subsequent electronic processing, combining a **First-Principles Physics Engine** that simulates physiological pressure, adds transducer noise, and integrates the signal.
 
 ---
 
@@ -53,9 +51,6 @@ This project implements a complete "digital twin" of the measurement pipeline. I
 - **Clinical Profiles**: Instantly switch between "Normal", "Obstructive (COPD)", "Restrictive", and "Sensor Zero-Drift" patients to see the mathematical variations in real-time.
 - **Medical Equipment Aesthetic**: Dark theme with professional color coding and clean metric displays.
 
-### AI Diagnostic Classification
-- **Machine Learning Algorithm**: Random Forest Classifier trained on synthetic ATS/ERS-compliant data.
-- **Diagnostic Output**: Instantly categorizes the maneuver as Normal, Obstructive, or Restrictive with an output confidence score.
 
 ---
 
@@ -85,22 +80,7 @@ This project implements a complete "digital twin" of the measurement pipeline. I
 │  │  - Math: Trapezoidal Numerical Integration              │    │
 │  └─────────────────────────────────────────────────────────┘    │
 └────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────┴────────────────────────────────────┐
-│            AI Diagnostic Module (Random Forest)                 │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Training Phase (Offline)                               │    │
-│  │  - Generate 2000 ATS/ERS compliant clinical samples     │    │
-│  │  - Feature extraction: [FVC, FEV1, Ratio]               │    │
-│  │  - Train Random Forest Classifier                       │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Prediction Phase (Real-time)                           │    │
-│  │  - Receive extracted metrics from Physics Engine        │    │
-│  │  - Predict: Normal, Obstructive, or Restrictive         │    │
-│  │  - Output diagnostic confidence percentage              │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+
 
 ```
 
@@ -118,7 +98,6 @@ This project implements a complete "digital twin" of the measurement pipeline. I
 ```bash
 pip install numpy>=1.19.0
 pip install scipy>=1.7.0
-pip install scikit-learn>=0.24.0
 pip install matplotlib>=3.3.0
 
 ```
@@ -162,7 +141,7 @@ python spirometry_gui.py
 
 2. **Start Maneuver**: Click the green "START FVC MANEUVER" button.
 3. **Monitor Real-Time Processing**: Watch the 4-panel graphs dynamically render the 6-second exhalation.
-4. **Review Diagnosis**: Once the maneuver concludes, the system will automatically extract FVC, $FEV_1$, and the Tiffeneau Index, passing them to the AI for a final diagnosis.
+4. **Review Diagnosis**: Once the maneuver concludes, the system will automatically extract FVC, $FEV_1$, and the Tiffeneau Index to display the metrics.
 
 ### Understanding the Clinical Display
 
@@ -173,23 +152,6 @@ python spirometry_gui.py
 
 ---
 
-## AI Model Details
-
-### Algorithm Selection: Random Forest Classifier
-
-A Random Forest Classifier was chosen over standard logical thresholds to handle edge-cases and boundary conditions organically, making the system more robust to varying patient demographics.
-
-### Training Data Characteristics
-
-The AI is trained on 2,000 synthetically generated data points strictly following ATS/ERS clinical guidelines:
-
-* **Normal**: $FVC \ge 4.0L$, $FEV_1/FVC \ge 70\%$
-* **Obstructive**: $FEV_1/FVC < 70\%$ (hallmark of Asthma/COPD)
-* **Restrictive**: $FVC < 80\%$ of predicted normal, but $FEV_1/FVC \ge 70\%$
-
-### Real-Time Prediction
-
-The model scales the newly generated features (`StandardScaler`), queries the forest, and outputs the highest probability class alongside a strict confidence metric.
 
 ---
 
@@ -222,9 +184,8 @@ This guarantees an integration error bounded by $O(\Delta t^2)$, satisfying the 
 ## File Descriptions
 
 * **`pneumotach_engine.py`**: The core simulation engine. Contains the mathematical models for waveform synthesis, noise generation, `SciPy` digital filtering, and Trapezoidal integration.
-* **`diagnostic_classifier.py`**: The AI module. Generates synthetic spirometry data, trains the Random Forest model, and provides the prediction API.
 * **`spirometry_gui.py`**: The `Tkinter` application. Handles the layout, manages threading for the real-time playback, and renders the Matplotlib 4-panel diagnostic grid.
-* **`test_system.py`**: Automated engineering validation suite. Tests the fluid dynamics boundaries, confirms integration accuracy, and validates AI classification logic.
+* **`test_system.py`**: Automated engineering validation suite. Tests the fluid dynamics boundaries and confirms integration accuracy.
 
 ---
 
@@ -243,7 +204,6 @@ python test_system.py
 
 1. **Hagen-Poiseuille & Integration Engine**: Validates that generated waveforms correctly translate $Pa$ to $L/s$ and integrate strictly within physiological normal bounds (4.0 - 6.0L).
 2. **Pathological Simulations**: Ensures that modifying the mathematical time constant ($\tau = 1.5s$) accurately forces the $FEV_1/FVC$ ratio below the 70% threshold.
-3. **AI Diagnostic Validation**: Tests edge-case data points to ensure the Random Forest correctly identifies Obstruction vs. Restriction.
 
 ---
 
